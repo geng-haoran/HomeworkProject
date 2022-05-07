@@ -15,16 +15,20 @@ import torchvision
 import torchvision.transforms as transforms
 
 from torch.utils.tensorboard  import SummaryWriter
+from dataset import CIFAR10
+# from network import ConvNet
 
 class DynamicAct(nn.Module):
     # TODO: 实现动态阈值的激活函数
     pass
 
+
+
 # TODO: 搭建卷积神经网络
 class ConvNet(nn.Module):
     def __init__(self, num_class=10, **kwargs):
         super(ConvNet, self).__init__()
-        self.layer1 = nn.Sequential(
+        self.convlayer = nn.Sequential(
             nn.Conv2d(3, 32, 3),
             nn.ReLU(inplace=True),
             nn.Conv2d(32, 32, 3),
@@ -47,7 +51,7 @@ class ConvNet(nn.Module):
             x: 输入图片
             quant: 是否使用模型量化
         """
-        x = self.layer1(x)
+        x = self.convlayer(x)
         return x
     
     # TODO: 计算正则项
@@ -74,3 +78,18 @@ class PGD():
     
     def forward(self, images, labels):
         pass
+
+
+if __name__ == "__main__":
+    writer = SummaryWriter(log_dir='../experiments/network_structure')
+    net = ConvNet()
+    train_dataset = CIFAR10().train_imgs
+    train_loader = torch.utils.data.DataLoader(
+        train_dataset, batch_size=2, shuffle=False, num_workers=2)
+    # Write a CNN graph. 
+    # Please save a figure/screenshot to '../results' for submission.
+    for imgs, labels in train_loader:
+        print(imgs[0].shape)
+        writer.add_graph(net, imgs)
+        writer.close()
+        break 

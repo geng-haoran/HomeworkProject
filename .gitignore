@@ -128,5 +128,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+*exp*
+
 
 raw*
+data/
+trashbin/
