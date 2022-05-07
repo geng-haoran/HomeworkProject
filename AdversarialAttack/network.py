@@ -83,7 +83,7 @@ class PGD():
 if __name__ == "__main__":
     writer = SummaryWriter(log_dir='../experiments/network_structure')
     net = ConvNet()
-    train_dataset = CIFAR10().train_imgs
+    train_dataset = CIFAR10() #.train_imgs
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=2, shuffle=False, num_workers=2)
     # Write a CNN graph. 

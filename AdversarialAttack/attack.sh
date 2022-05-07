@@ -1,0 +1,1 @@
+python train.py -e attack_just_try -p  /data2/haoran/HW/HomeworkProject/experiments/just_try/ckpt/ckpt_epoch_63

@@ -1,0 +1,1 @@
+python train.py -e just_try -t 70 -c

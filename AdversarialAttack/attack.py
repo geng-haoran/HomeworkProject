@@ -51,6 +51,32 @@ def validate(epoch, model, val_loader, writer):
     print(' Val Acc@5 {top5.avg:.3f}'.format(top5=top5))
     return 
 
+def validate_attack(epoch, model, val_loader, writer):
+    model.eval()
+    top1 = AverageMeter()
+    top5 = AverageMeter()
+    print(val_loader)
+    exit(123)
+    for imgs, labels in tqdm.tqdm(val_loader):
+        if torch.cuda.is_available():
+            imgs = imgs.cuda()
+        bsz = labels.shape[0]
+        output = model(imgs)
+        if torch.cuda.is_available():
+            output = output.cpu()
+        # update metric
+        acc1, acc5 = evaluate(output, labels, topk=(1, 5))
+        top1.update(acc1.item(), bsz)
+        top5.update(acc5.item(), bsz)
+
+    writer.add_scalar('val/top@1', top1.avg, epoch)
+    writer.add_scalar('val/top@5', top5.avg, epoch)
+
+    print(' Val Acc@1 {top1.avg:.3f}'.format(top1=top1))
+    print(' Val Acc@5 {top5.avg:.3f}'.format(top5=top5))
+    return 
+
+
 def train(epoch, model, optimizer, criterion, train_loader, writer):
     model.train()
 
@@ -101,6 +127,7 @@ def run(args):
     # define dataset and dataloader
     train_dataset = CIFAR10()
     val_dataset = CIFAR10(train=False)
+    attack_dataset = CIFAR10(train = False, attack = True)
     
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=args.batchsize, shuffle=True, num_workers=2)
@@ -118,33 +145,15 @@ def run(args):
     # define loss
     criterion = torch.nn.CrossEntropyLoss()    
 
-    if args.cont:
-        # load latest checkpoint
-        ckpt_lst = os.listdir(ckpt_folder)
-        ckpt_lst.sort(key=lambda x: int(x.split('_')[-1]))
-        read_path = os.path.join(ckpt_folder, ckpt_lst[-1])
-        print('load checkpoint from %s'%(read_path))
-        checkpoint = torch.load(read_path)
-        model.load_state_dict(checkpoint['model'])
-        optimizer.load_state_dict(checkpoint['optimizer'])
-        start_epoch = checkpoint['epoch'] + 1
-    else:
-        start_epoch = 0
+    # load latest checkpoint
+    read_path = ckpt_path
+    print('load checkpoint from %s'%(read_path))
+    checkpoint = torch.load(read_path)
+    model.load_state_dict(checkpoint['model'])
 
-    for epoch in range(start_epoch, args.total_epoch):
-        train(epoch, model, optimizer, criterion, train_loader, writer)
-        
-        if epoch % args.save_freq == 0:
-            state = {
-                'model': model.state_dict(),
-                'optimizer': optimizer.state_dict(),
-                'epoch': epoch,
-            }
-            save_file = os.path.join(ckpt_folder, 'ckpt_epoch_%s'%(str(epoch)))
-            torch.save(state, save_file)
 
-        with torch.no_grad():
-            validate(epoch, model, val_loader, writer)
+    validate_attack(epoch, model, val_attack_loader, writer)
+            # validate_attack(epoch, model, val_loader, writer)
     return 
 
 # TODO: 训练与测试代码
@@ -153,11 +162,7 @@ if __name__ == '__main__':
 
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument('--exp_name', '-e', type=str, required=True, help="The checkpoints and logs will be save in ./checkpoint/$EXP_NAME")
-    arg_parser.add_argument('--lr', '-l', type=float, default=1e-4, help="Learning rate")
-    arg_parser.add_argument('--save_freq', '-s', type=int, default=1, help="frequency of saving model")
-    arg_parser.add_argument('--total_epoch', '-t', type=int, default=10, help="total epoch number for training")
-    arg_parser.add_argument('--cont', '-c', action='store_true', help="whether to load saved checkpoints from $EXP_NAME and continue training")
-    arg_parser.add_argument('--batchsize', '-b', type=int, default=20, help="batch size")
+    arg_parser.add_argument('--ckpt_path', '-p', type=str, required=True, help="The checkpoints to be attacked")
     args = arg_parser.parse_args()
 
     run(args)
