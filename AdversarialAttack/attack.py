@@ -47,6 +47,17 @@ def validate_attack(model, val_loader, attack = False):
         output = model(imgs)
         if torch.cuda.is_available():
             output = output.cpu()
+
+        if attack:
+            topk = (1,)
+            maxk = max(topk)
+            batch_size = target.size(0)
+
+            _, pred = output.topk(maxk, 1, True, True)
+            pred = pred.t()
+            print(pred)
+            np.save("/data2/haoran/HW/HomeworkProject/AdversarialAttack/result/attack_pred.npy",pred.numpy(), allow_pickle='TRUE')
+            exit(123)
         # update metric
         acc1, acc5 = evaluate(output, labels, topk=(1, 5))
         top1.update(acc1.item(), bsz)
