@@ -66,7 +66,8 @@ def train(epoch, model, optimizer, criterion, train_loader, writer):
             labels = labels.cuda()
 
         optimizer.zero_grad()
-
+        # print(imgs.shape)
+        # exit(123)
         output = model(imgs)
         loss = criterion(output, labels)
 

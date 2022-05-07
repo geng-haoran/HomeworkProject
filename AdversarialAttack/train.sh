@@ -1,1 +1,1 @@
-python train.py -e just_try -t 70 -c
+CUDA_VISIBLE_DEVICES=6 python train.py -e just_new -t 100 -c

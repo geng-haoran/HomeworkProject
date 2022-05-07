@@ -11,7 +11,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
-
+from PGD.pgd import PGD
 import torchvision
 import torchvision.transforms as transforms
 # 数据集
@@ -22,7 +22,7 @@ class CIFAR10():
     IMAGE_SIZE = [32, 32]
     IMAGE_CHANNELS = 3
     
-    def __init__(self,train=True):
+    def __init__(self,train=True,attack = False,model=None, eps=8/255, alpha=2/255, steps=4):
         transform = transforms.Compose([transforms.ToTensor(),
                                         transforms.Normalize(self.MEAN, self.STD)])
         self.train = train
@@ -31,6 +31,8 @@ class CIFAR10():
         self.train_gts = []
         self.test_imgs = []
         self.test_gts = []
+        self.raw_test_imgs = []
+        self.raw_test_gts = []
 
         for i in self.trainset:
             self.train_imgs.append(i[0])
@@ -38,24 +40,55 @@ class CIFAR10():
         for i in self.testset:
             self.test_imgs.append(i[0])
             self.test_gts.append(i[1])
-        self.train_imgs = np.vstack(self.train_imgs).reshape(-1, 3, 32, 32)
-        self.train_imgs = self.train_imgs.transpose((0, 2, 3, 1))  # convert to HWC
-        self.test_imgs = np.vstack(self.test_imgs).reshape(-1, 3, 32, 32)
-        self.test_imgs = self.test_imgs.transpose((0, 2, 3, 1))  # convert to HWC
+        for i in self.raw_testset:
+            self.raw_test_imgs.append(i[0])
+            self.raw_test_gts.append(i[1])
+        self.train_imgs = np.array([np.array(i) for i in self.train_imgs])
+        self.test_imgs = np.array([np.array(i) for i in self.test_imgs])
+        self.raw_test_imgs = np.array([np.array(i) for i in self.raw_test_imgs])
         self.train_gts = np.array(self.train_gts)
         self.test_gts = np.array(self.test_gts)
+        self.raw_test_gts = np.array(self.raw_test_gts)
         if self.train:
-            self.data = self.train_imgs
-            # print(self.data.shape)
+            self.data = self.train_imgs.transpose((0,2,3,1))
             self.targets = self.train_gts
         else:
-            self.data = self.test_imgs
+            
+            self.data = self.test_imgs.transpose((0,2,3,1))
+            # print(self.data.shape)
             self.targets = self.test_gts
+        if attack:
+            atk = PGD(model=model, eps=eps, alpha=alpha, steps=steps)
+            # for i in range(self.raw_test_imgs):
+            # print(torch.from_numpy(self.raw_test_imgs).shape)
+            # print(torch.from_numpy(self.raw_test_imgs.transpose((0,3,1,2))).shape)
+            self.adv_images = atk(torch.from_numpy(self.raw_test_imgs.transpose((0,3,1,2))).float()/255, torch.from_numpy(self.raw_test_gts))
+            self.raw_adv_images = self.adv_images.cpu().numpy().transpose((0,2,3,1))
+            
+            self.data = self.adv_images.cpu().numpy().transpose((0,2,3,1))
+            self.targets = self.raw_test_gts
+            for i in range(self.data.shape[0]):
+                # print(transform(self.data[i].copy()).shape)
+                self.data[i] = transform(self.data[i].copy()).numpy().transpose((1,2,0))
+            # print(self.adv_images)
+            # print(self.data.shape)
+            # exit(123)
+            # print(self.targets.shape)
+            # print(self.data.max(0).max(0).max(0))
+            # print(self.data.min(0).min(0).min(0))
+        
+        # print(self.test_imgs.max(0).max(0).max(0))
+        # print(self.test_imgs.min(0).min(0).min(0))
+        # print((self.raw_test_imgs).max(0).max(0).max(0))
+        # print((self.raw_test_imgs).min(0).min(0).min(0))
+        # print(self.raw_test_imgs.shape)
+        # exit(123)
 
     
     def load_dataset(self, transform):
         self.trainset = torchvision.datasets.CIFAR10(root="./data", transform=transform, download=False)
         self.testset = torchvision.datasets.CIFAR10(root="./data", train=False, transform=transform, download=False)
+        self.raw_testset = torchvision.datasets.CIFAR10(root="./data", train=False, transform=None, download=False)
     def __getitem__(self, index):
         """
         Args:
