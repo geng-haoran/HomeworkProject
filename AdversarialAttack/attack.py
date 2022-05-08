@@ -56,8 +56,9 @@ def validate_attack(model, val_loader, attack = False):
             _, pred = output.topk(maxk, 1, True, True)
             
             preds.append(list(pred.reshape(-1)))
+            
             # cv2.imwrite(pjoin(visu_root,f"test{0}"+".png"),(imgs[0]*255).astype(np.uint8))
-        
+
         # update metric
         acc1, acc5 = evaluate(output, labels, topk=(1, 5))
         top1.update(acc1.item(), bsz)
@@ -114,14 +115,16 @@ def run(args):
 
     val_loader = torch.utils.data.DataLoader(
          val_dataset, batch_size=args.batchsize, shuffle=False, num_workers=2)
-    print("Finish Loadding All Data ~")
-
+    # print("Finish Loadding All Data ~")
+    print("Attacked !!!")
     validate_attack(model, val_loader, attack = True)
 
     val_dataset = CIFAR10(train = False)
     val_loader = torch.utils.data.DataLoader(
          val_dataset, batch_size=args.batchsize, shuffle=False, num_workers=2)
-    print("Finish Loadding All Data ~")
+    # print("Finish Loadding All Data ~")
+    
+    print("Not Attacked")
 
     validate_attack(model, val_loader)
     return 

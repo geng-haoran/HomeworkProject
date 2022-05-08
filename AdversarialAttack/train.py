@@ -13,8 +13,7 @@ from torch.utils.data import DataLoader
 from util import evaluate, AverageMeter
 import torchvision
 import torchvision.transforms as transforms
-from PGD.pgd_training import PGD_TRAIN
-# exit(123)
+from PGD.pgd import PGD_TRAIN
 from torch.utils.tensorboard  import SummaryWriter
 from dataset import CIFAR10
 from network import ConvNet
