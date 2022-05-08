@@ -1,5 +1,18 @@
 import torch 
 
+LABEL2NAME = [
+"airplane",										
+"automobile",										
+"bird",										
+"cat",										
+"deer",										
+"dog",										
+"frog",										
+"horse",										
+"ship",										
+"truck",
+]
+
 class AverageMeter(object):
     """Computes and stores the average and current value
        Imported from https://github.com/pytorch/examples/blob/master/imagenet/main.py#L247-L262

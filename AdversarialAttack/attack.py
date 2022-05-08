@@ -37,7 +37,7 @@ def validate_attack(model, val_loader, attack = False):
     top5 = AverageMeter()
     # print(val_loader)
     # exit(123)
-    
+    preds = []
     for imgs, labels in tqdm.tqdm(val_loader):
         if torch.cuda.is_available():
             imgs = imgs.cuda()
@@ -48,21 +48,27 @@ def validate_attack(model, val_loader, attack = False):
         if torch.cuda.is_available():
             output = output.cpu()
 
-        if attack:
+        if not attack:
             topk = (1,)
             maxk = max(topk)
-            batch_size = target.size(0)
+            batch_size = labels.size(0)
 
             _, pred = output.topk(maxk, 1, True, True)
-            pred = pred.t()
-            print(pred)
-            np.save("/data2/haoran/HW/HomeworkProject/AdversarialAttack/result/attack_pred.npy",pred.numpy(), allow_pickle='TRUE')
-            exit(123)
+            
+            preds.append(list(pred.reshape(-1)))
+            # cv2.imwrite(pjoin(visu_root,f"test{0}"+".png"),(imgs[0]*255).astype(np.uint8))
+        
         # update metric
         acc1, acc5 = evaluate(output, labels, topk=(1, 5))
         top1.update(acc1.item(), bsz)
         top5.update(acc5.item(), bsz)
-
+    if not attack:
+        print(preds)
+        print(torch.tensor(preds))
+        print(torch.tensor(preds).reshape(-1))
+        print(torch.tensor(preds).reshape((-1)).shape)
+        np.save("/data2/haoran/HW/HomeworkProject/AdversarialAttack/result/raw_pred.npy",torch.tensor(preds).reshape((-1)).numpy(), allow_pickle='TRUE')
+        exit(123)
     print(' Val Acc@1 {top1.avg:.3f}'.format(top1=top1))
     print(' Val Acc@5 {top5.avg:.3f}'.format(top5=top5))
     return 
@@ -110,7 +116,7 @@ def run(args):
          val_dataset, batch_size=args.batchsize, shuffle=False, num_workers=2)
     print("Finish Loadding All Data ~")
 
-    validate_attack(model, val_loader)
+    validate_attack(model, val_loader, attack = True)
 
     val_dataset = CIFAR10(train = False)
     val_loader = torch.utils.data.DataLoader(
