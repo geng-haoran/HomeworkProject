@@ -62,13 +62,13 @@ def validate_attack(model, val_loader, attack = False):
         acc1, acc5 = evaluate(output, labels, topk=(1, 5))
         top1.update(acc1.item(), bsz)
         top5.update(acc5.item(), bsz)
-    if not attack:
-        print(preds)
-        print(torch.tensor(preds))
-        print(torch.tensor(preds).reshape(-1))
-        print(torch.tensor(preds).reshape((-1)).shape)
-        np.save("/data2/haoran/HW/HomeworkProject/AdversarialAttack/result/raw_pred.npy",torch.tensor(preds).reshape((-1)).numpy(), allow_pickle='TRUE')
-        exit(123)
+    # if not attack:
+    #     print(preds)
+    #     print(torch.tensor(preds))
+    #     print(torch.tensor(preds).reshape(-1))
+    #     print(torch.tensor(preds).reshape((-1)).shape)
+    #     np.save("/data2/haoran/HW/HomeworkProject/AdversarialAttack/result/raw_pred.npy",torch.tensor(preds).reshape((-1)).numpy(), allow_pickle='TRUE')
+    #     exit(123)
     print(' Val Acc@1 {top1.avg:.3f}'.format(top1=top1))
     print(' Val Acc@5 {top5.avg:.3f}'.format(top5=top5))
     return 

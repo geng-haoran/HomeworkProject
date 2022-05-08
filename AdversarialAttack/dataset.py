@@ -22,7 +22,7 @@ class CIFAR10():
     IMAGE_SIZE = [32, 32]
     IMAGE_CHANNELS = 3
     
-    def __init__(self,train=True,attack = False,model=None, eps=8/255, alpha=2/255, steps=4):
+    def __init__(self,train=True,attack = False,model=None, eps=8/255, alpha=2/255, steps=4, attck_training = False):
         transform = transforms.Compose([transforms.ToTensor(),
                                         transforms.Normalize(self.MEAN, self.STD)])
         self.train = train

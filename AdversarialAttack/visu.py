@@ -10,7 +10,7 @@ ckpt_path = "/data2/haoran/HW/HomeworkProject/experiments/just_new/ckpt/ckpt_epo
 visu_root = "/data2/haoran/HW/HomeworkProject/AdversarialAttack/visu"
 raw_pred = np.load("/data2/haoran/HW/HomeworkProject/AdversarialAttack/result/raw_pred.npy",allow_pickle='TRUE')
 attack_pred = np.load("/data2/haoran/HW/HomeworkProject/AdversarialAttack/result/attack_pred.npy",allow_pickle='TRUE')
-
+data_save_path = "/data2/haoran/HW/HomeworkProject/AdversarialAttack/data/attack_epoch61/attack_data.npy"
 count = 0
 # define network 
 model = ConvNet()
@@ -23,6 +23,20 @@ print('load checkpoint from %s'%(read_path))
 checkpoint = torch.load(read_path)
 model.load_state_dict(checkpoint['model'])
 val_dataset = CIFAR10(attack = True, model = model)
+raw_correct = 0
+attack_wrong =0 
+print(val_dataset.data)
+np.save(data_save_path,np.array(val_dataset.data),allow_pickle = True )
+exit(123)
+for i in range(val_dataset.raw_test_imgs.shape[0]):
+    if raw_pred[i] == val_dataset.raw_test_gts[i]:
+        raw_correct += 1
+        if raw_pred[i] != attack_pred[i]:
+            attack_wrong += 1
+print("raw_correct: ",raw_correct)
+print("attack_wrong: ",attack_wrong)
+print("ratio: ",attack_wrong/(raw_correct+0.))
+exit(123)
 for i in range(100):
     if raw_pred[i] != attack_pred[i] and raw_pred[i] == val_dataset.raw_test_gts[i]:
         img = np.ones((440,1000, 3), dtype=np.uint8) * 255
