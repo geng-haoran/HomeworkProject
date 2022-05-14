@@ -33,5 +33,5 @@ CUDA_VISIBLE_DEVICES=4  python attack.py -e attack_just_try\
  -p /data2/haoran/HW/HomeworkProject/experiments/new_RSE/ckpt/ckpt_epoch_100 -RSE
 
  
-   CUDA_VISIBLE_DEVICES=6  python attack.py -e attack_just_try\
- -p /data2/haoran/HW/HomeworkProject/experiments/new_RSE/ckpt/ckpt_epoch_100 -RSE
+   CUDA_VISIBLE_DEVICES=7  python attack.py -e attack_just_try\
+ -p /data2/haoran/HW/HomeworkProject/experiments/new_small_spectral_new/ckpt/ckpt_epoch_100 -small_model

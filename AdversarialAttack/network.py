@@ -128,6 +128,28 @@ class ConvNet(nn.Module):
         x = self.convlayer(x)
         return x
 
+class ConvNet_Toy(nn.Module):
+    def __init__(self, num_class=10, **kwargs):
+        super(ConvNet_Toy, self).__init__()
+        self.convlayer = nn.Sequential(
+        nn.Conv2d(3, 32, 3),
+        nn.ReLU(inplace=True),
+        nn.Conv2d(32, 32, 3),
+        nn.ReLU(inplace=True),
+        nn.Flatten(),
+        nn.Linear(28*28*32, num_class)
+        )
+                
+    def forward(self, x, quant=False):
+        """
+            x: 输入图片
+            quant: 是否使用模型量化
+        """
+        # print(x.shape)
+        # exit(123)
+        x = self.convlayer(x)
+        return x
+
 class ConvNet2(nn.Module):
     def __init__(self, num_class=10, **kwargs):
         super(ConvNet2, self).__init__()
@@ -174,16 +196,7 @@ class ConvNet_quant(nn.Module):
         #     nn.ReLU(inplace=True),
         #     nn.Conv2d(32, 32, 3),
         #     nn.ReLU(inplace=True),
-        #     # nn.MaxPool2d(2),
-        #     # nn.Conv2d(32, 64, 3),
-        #     # nn.ReLU(inplace=True),
-        #     # nn.Conv2d(64, 64, 3),
-        #     # nn.ReLU(inplace=True),
-        #     # nn.MaxPool2d(2),
         #     nn.Flatten(),
-        #     # nn.Linear(64*25, 512),
-        #     # nn.Dropout(p=0.5),
-        #     # nn.ReLU(inplace=True),
         #     nn.Linear(28*28*32, num_class)
         # )
         self.conv1 = nn.Conv2d(3, 32, 3)
@@ -322,7 +335,7 @@ class PGD():
 
 if __name__ == "__main__":
     writer = SummaryWriter(log_dir='../experiments/network_structure')
-    net = ConvNet()
+    net = ConvNet_Toy()
     train_dataset = CIFAR10() #.train_imgs
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=2, shuffle=False, num_workers=2)
