@@ -25,8 +25,11 @@ CUDA_VISIBLE_DEVICES=5 python train.py -e pgd_train_quan_try -t 300 \
  -quant_model -quantization -attack
 
  
- CUDA_VISIBLE_DEVICES=7 python train.py -e new_small_orthogonal -t 300 \
+ CUDA_VISIBLE_DEVICES=6 python train.py -e new_small_orthogonal -t 300 \
  -small_model -orthogonal
 
-  CUDA_VISIBLE_DEVICES=7 python train.py -e new_small_orthogonal -t 300 \
+  CUDA_VISIBLE_DEVICES=5 python train.py -e new_small_orthogonal -t 300 \
  -small_model -spectral
+
+  CUDA_VISIBLE_DEVICES=4 python train.py -e new_RSE -t 300 \
+ -RSE

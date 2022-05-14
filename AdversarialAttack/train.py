@@ -16,7 +16,7 @@ import torchvision.transforms as transforms
 from PGD.pgd import PGD_TRAIN
 from torch.utils.tensorboard  import SummaryWriter
 from dataset import CIFAR10
-from network import ConvNet, ConvNet2, ConvNet_quant,regularizationTerm
+from network import ConvNet, ConvNet2, ConvNet_quant,regularizationTerm, ConvNet_RSE
 ###################
     # 设置随机种子，保证实验可复现性
 def setup_seed(seed):
@@ -203,8 +203,9 @@ def run(args):
     if args.quant_model:
         model = ConvNet_quant()
     elif args.small_model:
-        print("???")
         model = ConvNet2()
+    elif args.RSE:
+        model = ConvNet_RSE()
     else:
         model = ConvNet()
     if torch.cuda.is_available():
@@ -266,6 +267,7 @@ if __name__ == '__main__':
     arg_parser.add_argument('--quantization', '-quantization', action='store_true', help="whether to use quantization")
     arg_parser.add_argument('--orthogonal', '-orthogonal', action='store_true', help="whether to use orthogonal regularization")
     arg_parser.add_argument('--spectral', '-spectral', action='store_true', help="whether to use spectral regularization")
+    arg_parser.add_argument('--RSE', '-RSE', action='store_true', help="whether to use RSE noise")
     args = arg_parser.parse_args()
 
     run(args)

@@ -17,7 +17,7 @@ import torchvision
 import torchvision.transforms as transforms
 from PGD.pgd import PGD
 from dataset import CIFAR10
-from network import ConvNet,ConvNet2,ConvNet_quant
+from network import ConvNet,ConvNet2,ConvNet_quant,ConvNet_RSE
 import cv2
 ###################
 visu_root = "/data2/haoran/HW/HomeworkProject/AdversarialAttack/visu"
@@ -87,9 +87,13 @@ def run(args):
         model = ConvNet_quant()
     elif args.small_model:
         model = ConvNet2()
+    elif args.RSE:
+        model = ConvNet_RSE()
     if torch.cuda.is_available():
+        # model = ConvNet()
         model = model.cuda()
-    model_ = ConvNet2()
+    if args.quant_model:
+        model_ = ConvNet2()
     # define loss
     criterion = torch.nn.CrossEntropyLoss()    
 
@@ -101,12 +105,16 @@ def run(args):
     # for i in checkpoint["model"]:
     #     print(i)
     # exit(123)
-    model_.load_state_dict({"conv1.weight":checkpoint["model"]["conv1.weight"],"conv1.bias":checkpoint["model"]["conv1.bias"],
-    "conv2.weight":checkpoint["model"]["conv2.weight"],"conv2.bias":checkpoint["model"]["conv2.bias"],"Linear.weight":checkpoint["model"]["Linear.weight"],"Linear.bias":checkpoint["model"]["Linear.bias"]})
+    if args.quant_model:
+        model_.load_state_dict({"conv1.weight":checkpoint["model"]["conv1.weight"],"conv1.bias":checkpoint["model"]["conv1.bias"],
+        "conv2.weight":checkpoint["model"]["conv2.weight"],"conv2.bias":checkpoint["model"]["conv2.bias"],"Linear.weight":checkpoint["model"]["Linear.weight"],"Linear.bias":checkpoint["model"]["Linear.bias"]})
 
 
     # define dataset and dataloader
-    val_dataset = CIFAR10(attack = True, model = model_)
+    if args.quant_model:
+        val_dataset = CIFAR10(attack = True, model = model_)
+    else:
+        val_dataset = CIFAR10(attack = True, model = model)
     # visu_path = pjoin(visu_root,f"adv{1}"+".png")
 
     ######################  visualization  ######################
@@ -142,6 +150,7 @@ if __name__ == '__main__':
     arg_parser.add_argument('--batchsize', '-b', type=int, default=20, help="batch size")   
     arg_parser.add_argument('--quant_model', '-quant_model', action='store_true', help="whether to use small model")
     arg_parser.add_argument('--small_model', '-small_model', action='store_true', help="whether to use small model")
+    arg_parser.add_argument('--RSE', '-RSE', action='store_true', help="whether to use RSE noise")
     args = arg_parser.parse_args()
 
     run(args)
