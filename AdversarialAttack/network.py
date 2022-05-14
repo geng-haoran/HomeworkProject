@@ -133,7 +133,7 @@ class ConvNet_quant(nn.Module):
         self.conv1_int = nn.Conv2d(3, 32, 3)
         # print(self.conv1.weight)
         # self.conv1.weight = self.conv1.weight * 2
-        self.torch.ones((3),requires_grad = True)
+        self.t = torch.ones((7),requires_grad = True)
         self.conv2 = nn.Conv2d(32, 32, 3)
         self.conv2_int = nn.Conv2d(32, 32, 3)
         self.ReLU = nn.ReLU(inplace=True)
@@ -141,15 +141,15 @@ class ConvNet_quant(nn.Module):
         self.Linear = nn.Linear(28*28*32, num_class)
         self.Linear_int = nn.Linear(28*28*32, num_class)
     def myReLU(self, t, x):
-        mask1 = x<t[0]
-        mask2 = torch.logical_and(x>t[0],x<t[1])
-        mask3 = torch.logical_and(x>t[1],x<t[2])
-        mask4 = x>t[2]
-        x[mask1] = 0
-        x[mask2] = t[0]
-        x[mask3] = t[1]
-        x[mask4] = t[2]
-        return x,mask1,mask2,mask3,mask4
+        return 0.5*(torch.sign(x-self.t[6])+
+        self.t[6]*(torch.sign(self.t[6]-x)+torch.sign(x-self.t[5]))+
+        self.t[5]*(torch.sign(self.t[5]-x)+torch.sign(x-self.t[4]))+
+        self.t[4]*(torch.sign(self.t[4]-x)+torch.sign(x-self.t[3]))+
+        self.t[2]*(torch.sign(self.t[3]-x)+torch.sign(x-self.t[2]))+
+        self.t[1]*(torch.sign(self.t[2]-x)+torch.sign(x-self.t[1]))+
+        self.t[0]*(torch.sign(self.t[1]-x)+torch.sign(x-self.t[0]))-
+        torch.sign(self.t[0]-x))
+        
     def forward(self, x,quant=True):
         """
             x: 输入图片
@@ -169,10 +169,11 @@ class ConvNet_quant(nn.Module):
                 
 
             x1 = self.conv1(x)
-            x2,mask11,mask12,mask13,mask14 = self.myReLU(self.t,x1)
+            x2 = self.myReLU(self.t,x1)
+            
             # x2 = self.ReLU(x1)
             x3 = self.conv2(x2)
-            x4,mask21,mask22,mask23,mask24 = self.myReLU(self.t,x3)
+            x4 = self.myReLU(self.t,x3)
             # x4 = self.ReLU(x3)
             x5 = self.Flatten(x4)
             x6 = self.Linear(x5)
@@ -183,7 +184,7 @@ class ConvNet_quant(nn.Module):
             x5_int = self.Flatten(x4_int)
             x6_int = self.Linear_int(x5_int)
             # x6.grad = x6_int.grad
-            return x6_int,mask11,mask12,mask13,mask14,mask21,mask22,mask23,mask24
+            return x6_int
         else:
             print("no quantization")
             x1 = self.conv1(x)

@@ -20,5 +20,5 @@ CUDA_VISIBLE_DEVICES=5 python train.py -e pgd_train_quan_try -t 300 \
  CUDA_VISIBLE_DEVICES=7 python train.py -e new_quant_noattack_quantization -t 300 \
  -quant_model -quantization
 
-  CUDA_VISIBLE_DEVICES=7 python train.py -e new_quant_attack_quantization -t 300 \
+  CUDA_VISIBLE_DEVICES=4 python train.py -e new_quant_attack_quantization_relu -t 300 \
  -quant_model -quantization -attack

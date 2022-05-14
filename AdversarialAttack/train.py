@@ -122,7 +122,7 @@ def pgd_train(epoch, model, optimizer, criterion, train_loader, writer, eps=8/25
             # exit(123)
 
         optimizer.zero_grad()
-        output = model(imgs,args.quantization)
+        output= model(imgs,args.quantization)
         loss = criterion(output, labels)
 
         # update metric
@@ -130,7 +130,14 @@ def pgd_train(epoch, model, optimizer, criterion, train_loader, writer, eps=8/25
         acc1, acc5 = evaluate(output, labels, topk=(1, 5))
         top1.update(acc1.item(), bsz)
         top5.update(acc5.item(), bsz)
-
+        # model.x2[mask11].grad = torch.tensor(0, dtype=float)
+        # model.x2[mask14].grad = torch.tensor(0, dtype=float)
+        # model.x2[mask12].grad = torch.tensor(1, dtype=float)
+        # model.x2[mask13].grad = torch.tensor(1, dtype=float)
+        # model.x4[mask21].grad = torch.tensor(0, dtype=float)
+        # model.x4[mask24].grad = torch.tensor(0, dtype=float)
+        # model.x4[mask22].grad = torch.tensor(1, dtype=float)
+        # model.x4[mask23].grad = torch.tensor(1, dtype=float)
         loss.backward()
         if args.quantization:
             for p,q in zip(model.conv1.parameters(),model.conv1_int.parameters()):
@@ -189,6 +196,7 @@ def run(args):
     if args.quant_model:
         model = ConvNet_quant()
     elif args.small_model:
+        print("???")
         model = ConvNet2()
     else:
         model = ConvNet()

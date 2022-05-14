@@ -83,10 +83,13 @@ def run(args):
 
     
     # define network 
-    model = ConvNet_quant()
+    if args.quant_model:
+        model = ConvNet_quant()
+    elif args.small_model:
+        model = ConvNet2()
     if torch.cuda.is_available():
         model = model.cuda()
-
+    model_ = ConvNet2()
     # define loss
     criterion = torch.nn.CrossEntropyLoss()    
 
@@ -95,15 +98,15 @@ def run(args):
     print('load checkpoint from %s'%(read_path))
     checkpoint = torch.load(read_path)
     model.load_state_dict(checkpoint['model'])
+    # for i in checkpoint["model"]:
+    #     print(i)
+    # exit(123)
+    model_.load_state_dict({"conv1.weight":checkpoint["model"]["conv1.weight"],"conv1.bias":checkpoint["model"]["conv1.bias"],
+    "conv2.weight":checkpoint["model"]["conv2.weight"],"conv2.bias":checkpoint["model"]["conv2.bias"],"Linear.weight":checkpoint["model"]["Linear.weight"],"Linear.bias":checkpoint["model"]["Linear.bias"]})
+
 
     # define dataset and dataloader
-    val_dataset = CIFAR10(attack = True, model = model)
-    print(val_dataset.raw_test_imgs.shape)
-    print(val_dataset.raw_test_imgs.max(0).max(0).max(0))
-    print(val_dataset.raw_test_imgs.min(0).min(0).min(0))
-    print(val_dataset.raw_adv_images.shape)
-    print(val_dataset.raw_adv_images.max(0).max(0).max(0))
-    print(val_dataset.raw_adv_images.min(0).min(0).min(0))
+    val_dataset = CIFAR10(attack = True, model = model_)
     # visu_path = pjoin(visu_root,f"adv{1}"+".png")
 
     ######################  visualization  ######################
@@ -137,6 +140,8 @@ if __name__ == '__main__':
     arg_parser.add_argument('--exp_name', '-e', type=str, required=True, help="The checkpoints and logs will be save in ./checkpoint/$EXP_NAME")
     arg_parser.add_argument('--ckpt_path', '-p', type=str, required=True, help="The checkpoints to be attacked")
     arg_parser.add_argument('--batchsize', '-b', type=int, default=20, help="batch size")   
+    arg_parser.add_argument('--quant_model', '-quant_model', action='store_true', help="whether to use small model")
+    arg_parser.add_argument('--small_model', '-small_model', action='store_true', help="whether to use small model")
     args = arg_parser.parse_args()
 
     run(args)
