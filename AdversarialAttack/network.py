@@ -74,33 +74,25 @@ class ConvNet(nn.Module):
 class ConvNet2(nn.Module):
     def __init__(self, num_class=10, **kwargs):
         super(ConvNet2, self).__init__()
-        self.convlayer = nn.Sequential(
-            nn.Conv2d(3, 32, 3),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(32, 32, 3),
-            nn.ReLU(inplace=True),
-            # nn.MaxPool2d(2),
-            # nn.Conv2d(32, 64, 3),
-            # nn.ReLU(inplace=True),
-            # nn.Conv2d(64, 64, 3),
-            # nn.ReLU(inplace=True),
-            # nn.MaxPool2d(2),
-            nn.Flatten(),
-            # nn.Linear(64*25, 512),
-            # nn.Dropout(p=0.5),
-            # nn.ReLU(inplace=True),
-            nn.Linear(28*28*32, num_class)
-        )
+        self.conv1 = nn.Conv2d(3, 32, 3)
+        self.conv2 = nn.Conv2d(32, 32, 3)
+        self.ReLU = nn.ReLU(inplace=True)
+        self.Flatten = nn.Flatten()
+        self.Linear = nn.Linear(28*28*32, num_class)
         
     def forward(self, x, quant=False):
         """
             x: 输入图片
             quant: 是否使用模型量化
         """
-        # print(x.shape)
-        # exit(123)
-        x = self.convlayer(x)
-        return x
+        x1 = self.conv1(x)
+        x2 = self.ReLU(x1)
+        x3 = self.conv2(x2)
+        x4 = self.ReLU(x3)
+        x5 = self.Flatten(x4)
+        x6 = self.Linear(x5)
+        return x6      
+
     
     # TODO: 计算正则项
     def regularizationTerm(self, reg_type):
@@ -141,14 +133,23 @@ class ConvNet_quant(nn.Module):
         self.conv1_int = nn.Conv2d(3, 32, 3)
         # print(self.conv1.weight)
         # self.conv1.weight = self.conv1.weight * 2
-
+        self.torch.ones((3),requires_grad = True)
         self.conv2 = nn.Conv2d(32, 32, 3)
         self.conv2_int = nn.Conv2d(32, 32, 3)
         self.ReLU = nn.ReLU(inplace=True)
         self.Flatten = nn.Flatten()
         self.Linear = nn.Linear(28*28*32, num_class)
         self.Linear_int = nn.Linear(28*28*32, num_class)
-        
+    def myReLU(self, t, x):
+        mask1 = x<t[0]
+        mask2 = torch.logical_and(x>t[0],x<t[1])
+        mask3 = torch.logical_and(x>t[1],x<t[2])
+        mask4 = x>t[2]
+        x[mask1] = 0
+        x[mask2] = t[0]
+        x[mask3] = t[1]
+        x[mask4] = t[2]
+        return x,mask1,mask2,mask3,mask4
     def forward(self, x,quant=True):
         """
             x: 输入图片
@@ -168,9 +169,11 @@ class ConvNet_quant(nn.Module):
                 
 
             x1 = self.conv1(x)
-            x2 = self.ReLU(x1)
+            x2,mask11,mask12,mask13,mask14 = self.myReLU(self.t,x1)
+            # x2 = self.ReLU(x1)
             x3 = self.conv2(x2)
-            x4 = self.ReLU(x3)
+            x4,mask21,mask22,mask23,mask24 = self.myReLU(self.t,x3)
+            # x4 = self.ReLU(x3)
             x5 = self.Flatten(x4)
             x6 = self.Linear(x5)
             x1_int = self.conv1_int(x)
@@ -180,8 +183,9 @@ class ConvNet_quant(nn.Module):
             x5_int = self.Flatten(x4_int)
             x6_int = self.Linear_int(x5_int)
             # x6.grad = x6_int.grad
-            return x6_int
+            return x6_int,mask11,mask12,mask13,mask14,mask21,mask22,mask23,mask24
         else:
+            print("no quantization")
             x1 = self.conv1(x)
             x2 = self.ReLU(x1)
             x3 = self.conv2(x2)

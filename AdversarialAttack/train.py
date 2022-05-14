@@ -132,7 +132,7 @@ def pgd_train(epoch, model, optimizer, criterion, train_loader, writer, eps=8/25
         top5.update(acc5.item(), bsz)
 
         loss.backward()
-        if args.args.quantization:
+        if args.quantization:
             for p,q in zip(model.conv1.parameters(),model.conv1_int.parameters()):
                 p.grad = q.grad
             for p,q in zip(model.conv2.parameters(),model.conv2_int.parameters()):
@@ -181,13 +181,15 @@ def run(args):
     val_dataset = CIFAR10(train=False)
     
     train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=args.batchsize, shuffle=True, num_workers=2)
+        train_dataset, batch_size=args.batchsize, shuffle=True, num_workers=8)
     val_loader = torch.utils.data.DataLoader(
-         val_dataset, batch_size=args.batchsize, shuffle=False, num_workers=2)
+         val_dataset, batch_size=args.batchsize, shuffle=False, num_workers=8)
     print("Finish Loadding All Data ~")
     # define network args.
     if args.quant_model:
         model = ConvNet_quant()
+    elif args.small_model:
+        model = ConvNet2()
     else:
         model = ConvNet()
     if torch.cuda.is_available():
@@ -245,6 +247,7 @@ if __name__ == '__main__':
     arg_parser.add_argument('--cont', '-continue', action='store_true', help="whether to load saved checkpoints from $EXP_NAME and continue training")
     arg_parser.add_argument('--attack', '-attack', action='store_true', help="whether to train with PGD")
     arg_parser.add_argument('--quant_model', '-quant_model', action='store_true', help="whether to use small model")
+    arg_parser.add_argument('--small_model', '-small_model', action='store_true', help="whether to use small model")
     arg_parser.add_argument('--quantization', '-quantization', action='store_true', help="whether to use small model")
     args = arg_parser.parse_args()
 
