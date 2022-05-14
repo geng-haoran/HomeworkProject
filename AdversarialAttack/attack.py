@@ -17,7 +17,7 @@ import torchvision
 import torchvision.transforms as transforms
 from PGD.pgd import PGD
 from dataset import CIFAR10
-from network import ConvNet
+from network import ConvNet,ConvNet2,ConvNet_quant
 import cv2
 ###################
 visu_root = "/data2/haoran/HW/HomeworkProject/AdversarialAttack/visu"
@@ -83,7 +83,7 @@ def run(args):
 
     
     # define network 
-    model = ConvNet()
+    model = ConvNet_quant()
     if torch.cuda.is_available():
         model = model.cuda()
 

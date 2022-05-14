@@ -16,7 +16,7 @@ import torchvision.transforms as transforms
 from PGD.pgd import PGD_TRAIN
 from torch.utils.tensorboard  import SummaryWriter
 from dataset import CIFAR10
-from network import ConvNet
+from network import ConvNet, ConvNet2, ConvNet_quant
 ###################
     # 设置随机种子，保证实验可复现性
 def setup_seed(seed):
@@ -68,7 +68,7 @@ def train(epoch, model, optimizer, criterion, train_loader, writer):
         optimizer.zero_grad()
         # print(imgs.shape)
         # exit(123)
-        output = model(imgs)
+        output = model(imgs,args.quantization)
         loss = criterion(output, labels)
 
         # update metric
@@ -94,6 +94,9 @@ def train(epoch, model, optimizer, criterion, train_loader, writer):
 def pgd_train(epoch, model, optimizer, criterion, train_loader, writer, eps=8/255,
                  alpha=2/255, steps=4):
     model.train()
+    
+
+    # exit(123)
     pgd = PGD_TRAIN(model,eps,alpha)
     losses = AverageMeter()
     top1 = AverageMeter()
@@ -106,10 +109,20 @@ def pgd_train(epoch, model, optimizer, criterion, train_loader, writer, eps=8/25
             imgs = imgs.cuda()
             labels = labels.cuda()
 
-        optimizer.zero_grad()
+        
         # print(imgs.shape)
         # exit(123)
-        output = model(imgs)
+        # print(model.conv2.weight)
+        # print("???")
+        # print(imgs.shape)
+        # print(torch.abs(model.conv1.weight).shape)
+        # print(                            torch.max(torch.abs(model.conv1.weight),dim = 1)[0].shape)
+        # print(                  torch.max(torch.max(torch.abs(model.conv1.weight),dim = 1)[0],dim = 1)[0].shape)
+        
+            # exit(123)
+
+        optimizer.zero_grad()
+        output = model(imgs,args.quantization)
         loss = criterion(output, labels)
 
         # update metric
@@ -119,6 +132,16 @@ def pgd_train(epoch, model, optimizer, criterion, train_loader, writer, eps=8/25
         top5.update(acc5.item(), bsz)
 
         loss.backward()
+        if args.args.quantization:
+            for p,q in zip(model.conv1.parameters(),model.conv1_int.parameters()):
+                p.grad = q.grad
+            for p,q in zip(model.conv2.parameters(),model.conv2_int.parameters()):
+                p.grad = q.grad
+            for p,q in zip(model.Linear.parameters(),model.Linear_int.parameters()):
+                p.grad = q.grad
+        # model.conv1.grad = model.conv1_int.grad
+        # model.conv2.grad = model.conv2_int.grad
+        # model.Linear.grad = model.Linear_int.grad
         pgd.backup_grad()
         for t in range(steps):
             pgd.attack(is_first_attack=(t==0)) 
@@ -126,7 +149,7 @@ def pgd_train(epoch, model, optimizer, criterion, train_loader, writer, eps=8/25
                 model.zero_grad()
             else:
                 pgd.restore_grad()
-            output_adv = model(imgs, labels)
+            output_adv = model(imgs,args.quantization)
             loss_adv = criterion(output_adv, labels)
             loss_adv.backward()
         pgd.restore()
@@ -162,8 +185,11 @@ def run(args):
     val_loader = torch.utils.data.DataLoader(
          val_dataset, batch_size=args.batchsize, shuffle=False, num_workers=2)
     print("Finish Loadding All Data ~")
-    # define network 
-    model = ConvNet()
+    # define network args.
+    if args.quant_model:
+        model = ConvNet_quant()
+    else:
+        model = ConvNet()
     if torch.cuda.is_available():
         model = model.cuda()
 
@@ -195,7 +221,7 @@ def run(args):
         if epoch % args.save_freq == 0:
             state = {
                 'model': model.state_dict(),
-                'optimizer': optimizer.state_dict(),
+                'optimizer': optimizer.state_dict() ,
                 'epoch': epoch,
             }
             save_file = os.path.join(ckpt_folder, 'ckpt_epoch_%s'%(str(epoch)))
@@ -213,10 +239,13 @@ if __name__ == '__main__':
     arg_parser.add_argument('--exp_name', '-e', type=str, required=True, help="The checkpoints and logs will be save in ./checkpoint/$EXP_NAME")
     arg_parser.add_argument('--lr', '-l', type=float, default=1e-4, help="Learning rate")
     arg_parser.add_argument('--save_freq', '-s', type=int, default=1, help="frequency of saving model")
-    arg_parser.add_argument('--total_epoch', '-t', type=int, default=10, help="total epoch number for training")
-    arg_parser.add_argument('--cont', '-c', action='store_true', help="whether to load saved checkpoints from $EXP_NAME and continue training")
-    arg_parser.add_argument('--batchsize', '-b', type=int, default=2000, help="batch size")
-    arg_parser.add_argument('--attack', '-a', action='store_true', help="whether to train with PGD")
+    arg_parser.add_argument('--total_epoch', '-t', type=int, default=300, help="total epoch number for training")
+    arg_parser.add_argument('--batchsize', '-b', type=int, default=200, help="batch size")
+
+    arg_parser.add_argument('--cont', '-continue', action='store_true', help="whether to load saved checkpoints from $EXP_NAME and continue training")
+    arg_parser.add_argument('--attack', '-attack', action='store_true', help="whether to train with PGD")
+    arg_parser.add_argument('--quant_model', '-quant_model', action='store_true', help="whether to use small model")
+    arg_parser.add_argument('--quantization', '-quantization', action='store_true', help="whether to use small model")
     args = arg_parser.parse_args()
 
     run(args)
