@@ -17,10 +17,55 @@ import torchvision.transforms as transforms
 from torch.utils.tensorboard  import SummaryWriter
 from dataset import CIFAR10
 # from network import ConvNet
+def power_iteration(A, num_iter):
 
-class DynamicAct(nn.Module):
-    # TODO: 实现动态阈值的激活函数
-    pass
+	# choose a random vector
+    random_vec = torch.random.rand(A.shape[1])
+    for _ in range(num_iter):
+
+        # calculate  AV
+        random_vec1 = torch.dot(A, random_vec)
+        # norm
+        random_vec1_norm = torch.linalg.norm(random_vec1)
+        # re normalize the vector
+        random_vec = random_vec1 / random_vec1_norm
+    V = random_vec.reshape(1,-1)
+    max_lambda = torch.dot(V,torch.dot(A,V.T))
+    return max_lambda
+
+def regularizationTerm(model, reg_type, beta=1e-4):
+    """
+        reg_type: orthogonal 正交正则项; spectral 谱范数正则项
+    """
+    term = 0.0
+    if reg_type == "orthogonal":
+        loss_orth = torch.tensor(0., dtype=torch.float32).cuda()
+    
+        for name, param in model.named_parameters():
+            if 'weight' in name and param.requires_grad and len(param.shape)==4:
+                N, C, H, W = param.shape
+                weight = param.view(N * C, H, W)
+                weight_squared = torch.bmm(weight, weight.permute(0, 2, 1)) # (N * C) * H * H
+                ones = torch.ones(N * C, H, H, dtype=torch.float32) # (N * C) * H * H
+                diag = torch.eye(H, dtype=torch.float32) # (N * C) * H * H
+                loss_orth += ((weight_squared * (ones - diag).cuda()) ** 2).sum()
+
+        return loss_orth * beta
+    elif reg_type == "spectral":
+        loss_orth = torch.tensor(0., dtype=torch.float32).cuda()
+    
+        for name, param in model.named_parameters():
+
+            if 'weight' in name and param.requires_grad and len(param.shape)==4:
+                N, C, H, W = param.shape
+                weight = param.view(N * C, H, W)
+                
+                loss_orth += ((power_iteration(weight),500).cuda() ** 2).sum()
+                
+        return loss_orth * beta
+    else:
+        raise NotImplementedError
+
 
 
 
@@ -57,20 +102,7 @@ class ConvNet(nn.Module):
         return x
     
     # TODO: 计算正则项
-    def regularizationTerm(self, reg_type):
-        """
-            reg_type: orthogonal 正交正则项; spectral 谱范数正则项
-        """
-        term = 0.0
-        if reg_type == "orthogonal":
-            pass
-        elif reg_type == "spectral":
-            pass
-        else:
-            raise NotImplementedError
-        
-        return term
-
+    
 class ConvNet2(nn.Module):
     def __init__(self, num_class=10, **kwargs):
         super(ConvNet2, self).__init__()

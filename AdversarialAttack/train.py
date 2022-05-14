@@ -16,7 +16,7 @@ import torchvision.transforms as transforms
 from PGD.pgd import PGD_TRAIN
 from torch.utils.tensorboard  import SummaryWriter
 from dataset import CIFAR10
-from network import ConvNet, ConvNet2, ConvNet_quant
+from network import ConvNet, ConvNet2, ConvNet_quant,regularizationTerm
 ###################
     # 设置随机种子，保证实验可复现性
 def setup_seed(seed):
@@ -69,8 +69,12 @@ def train(epoch, model, optimizer, criterion, train_loader, writer):
         # print(imgs.shape)
         # exit(123)
         output = model(imgs,args.quantization)
-        loss = criterion(output, labels)
-
+        if args.orthogonal:
+            loss = criterion(output, labels) + regularizationTerm(model,"orthogonal")
+        elif args.spectral:
+            loss = criterion(output, labels) + regularizationTerm(model,"spectral")
+        else:
+            loss = criterion(output, labels)
         # update metric
         losses.update(loss.item(), bsz)
         acc1, acc5 = evaluate(output, labels, topk=(1, 5))
@@ -123,21 +127,18 @@ def pgd_train(epoch, model, optimizer, criterion, train_loader, writer, eps=8/25
 
         optimizer.zero_grad()
         output= model(imgs,args.quantization)
-        loss = criterion(output, labels)
+        if args.orthogonal:
+            loss = criterion(output, labels) + regularizationTerm(model,"orthogonal")
+        elif args.spectral:
+            loss = criterion(output, labels) + regularizationTerm(model,"spectral")
+        else:
+            loss = criterion(output, labels)
 
         # update metric
         losses.update(loss.item(), bsz)
         acc1, acc5 = evaluate(output, labels, topk=(1, 5))
         top1.update(acc1.item(), bsz)
         top5.update(acc5.item(), bsz)
-        # model.x2[mask11].grad = torch.tensor(0, dtype=float)
-        # model.x2[mask14].grad = torch.tensor(0, dtype=float)
-        # model.x2[mask12].grad = torch.tensor(1, dtype=float)
-        # model.x2[mask13].grad = torch.tensor(1, dtype=float)
-        # model.x4[mask21].grad = torch.tensor(0, dtype=float)
-        # model.x4[mask24].grad = torch.tensor(0, dtype=float)
-        # model.x4[mask22].grad = torch.tensor(1, dtype=float)
-        # model.x4[mask23].grad = torch.tensor(1, dtype=float)
         loss.backward()
         if args.quantization:
             for p,q in zip(model.conv1.parameters(),model.conv1_int.parameters()):
@@ -157,7 +158,13 @@ def pgd_train(epoch, model, optimizer, criterion, train_loader, writer, eps=8/25
             else:
                 pgd.restore_grad()
             output_adv = model(imgs,args.quantization)
-            loss_adv = criterion(output_adv, labels)
+            if args.orthogonal:
+                loss_adv = criterion(output_adv, labels) + regularizationTerm(model,"orthogonal")
+            elif args.spectral:
+                loss_adv = criterion(output_adv, labels) + regularizationTerm(model,"spectral")
+            else:
+                loss_adv = criterion(output_adv, labels)
+            # loss_adv = criterion(output_adv, labels)
             loss_adv.backward()
         pgd.restore()
 
@@ -254,9 +261,11 @@ if __name__ == '__main__':
 
     arg_parser.add_argument('--cont', '-continue', action='store_true', help="whether to load saved checkpoints from $EXP_NAME and continue training")
     arg_parser.add_argument('--attack', '-attack', action='store_true', help="whether to train with PGD")
-    arg_parser.add_argument('--quant_model', '-quant_model', action='store_true', help="whether to use small model")
+    arg_parser.add_argument('--quant_model', '-quant_model', action='store_true', help="whether to use quant model")
     arg_parser.add_argument('--small_model', '-small_model', action='store_true', help="whether to use small model")
-    arg_parser.add_argument('--quantization', '-quantization', action='store_true', help="whether to use small model")
+    arg_parser.add_argument('--quantization', '-quantization', action='store_true', help="whether to use quantization")
+    arg_parser.add_argument('--orthogonal', '-orthogonal', action='store_true', help="whether to use orthogonal regularization")
+    arg_parser.add_argument('--spectral', '-spectral', action='store_true', help="whether to use spectral regularization")
     args = arg_parser.parse_args()
 
     run(args)
