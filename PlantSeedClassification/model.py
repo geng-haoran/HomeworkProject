@@ -77,6 +77,10 @@ class ConvNet(nn.Module):
         return self.convlayer(x)
 
 class MLPNet(nn.Module):
+    def __init__(self, num_class  = LABEL_NUM):
+        super(MLPNet_Norm,self).__init__()
+        self.mlp = MLP(3, num_class)
+
     def __init__(self, num_class = LABEL_NUM):
         super(MLPNet,self).__init__()
         self.mlp = MLP(3, num_class)

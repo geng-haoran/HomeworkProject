@@ -16,14 +16,15 @@ from model import *
 
 def validate(model, test_loader):
     model.eval()
-    out = []
-    for imgs in tqdm.tqdm(test_loader):
+    out = {}
+    for imgs,name in tqdm.tqdm(test_loader):
         if torch.cuda.is_available():
             imgs = imgs.cuda()
         output = model(imgs)
         if torch.cuda.is_available():
             output = output.cpu()
-            out.append(output.numpy())
+            out[name[0]] = np.argmax(output.numpy())
+            # out.append(output.numpy())
     return out
 
 if __name__ == "__main__":

@@ -7,7 +7,6 @@ from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, confusion_matrix
 from utils import *
-from skimage.feature import hog
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
@@ -84,22 +83,13 @@ def main(thresh):
 
   labels = []
   vec = []
-  ppc = 16
-  hog_images = []
-  hog_features = []
   for file in image_path:
     img = cv2.imread(file, 0)
-    # fd,hog_image = hog(img, orientations=8, pixels_per_cell=(ppc,ppc),cells_per_block=(4, 4),block_norm= 'L2')
-    fd, hog_image = hog(img, orientations=8, pixels_per_cell=(16, 16),
-                    cells_per_block=(4, 4),block_norm= 'L2', visualize=True)
-    # print(fd)
-    # print(fd.shape)
+    img_des = CalcFeatures(img, thresh)
     if img_des is not None:
-      vec.append(fd)
+      img_vec = bag_of_features(img_des, centres, k)
+      vec.append(img_vec.reshape(-1))
       labels.append(NAME2LABEL[file.split("/")[-2]])
-  # print(np.array(vec).shape)
-  # exit(123)
-
     
   '''
   Splitting the data formed into test and split data and training the 
@@ -122,7 +112,7 @@ def main(thresh):
   print('Accuracy: {}'.format(accuracy_score(y_test, y_pred)))
   t1 = time.time()
   
-  return
+  return 
 
 
 accuracy = []

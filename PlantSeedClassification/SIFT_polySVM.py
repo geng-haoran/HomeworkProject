@@ -4,15 +4,10 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 from sklearn.svm import SVC
+import sklearn.svm as svm
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, confusion_matrix
 from utils import *
-from skimage.feature import hog
-from sklearn.datasets import load_digits
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression
-from sklearn.cluster import KMeans
-from sklearn.metrics import accuracy_score
 ##Combining the train and test data
 #get_ipython().system('cp -r /content/mnist_png/testing/* /content/mnist_png/training/')
 #get_ipython().system('rm -rf /content/mnist_png/testing /content/mnist_png.tar.gz')
@@ -84,22 +79,13 @@ def main(thresh):
 
   labels = []
   vec = []
-  ppc = 16
-  hog_images = []
-  hog_features = []
   for file in image_path:
     img = cv2.imread(file, 0)
-    # fd,hog_image = hog(img, orientations=8, pixels_per_cell=(ppc,ppc),cells_per_block=(4, 4),block_norm= 'L2')
-    fd, hog_image = hog(img, orientations=8, pixels_per_cell=(16, 16),
-                    cells_per_block=(4, 4),block_norm= 'L2', visualize=True)
-    # print(fd)
-    # print(fd.shape)
+    img_des = CalcFeatures(img, thresh)
     if img_des is not None:
-      vec.append(fd)
+      img_vec = bag_of_features(img_des, centres, k)
+      vec.append(img_vec.reshape(-1))
       labels.append(NAME2LABEL[file.split("/")[-2]])
-  # print(np.array(vec).shape)
-  # exit(123)
-
     
   '''
   Splitting the data formed into test and split data and training the 
@@ -110,27 +96,23 @@ def main(thresh):
   # print(np.array(labels).shape)
   X_train, X_test, y_train, y_test = train_test_split(vec, labels, test_size=0.2)
 #   print(len(X_train).shape,len(X_test).shape,y_train.shape,len(y_test))
-  clf = KMeans(n_clusters = LABEL_NUM, random_state=42)
-  clf.fit(X_train)
-  y_labels_train = clf.labels_
-  X_train = y_labels_train[:, np.newaxis]
-  model=LogisticRegression(random_state=42)
-  y_labels_test = clf.predict(X_test)
-  X_test = y_labels_test[:, np.newaxis]
-  model.fit(X_train, y_train)
-  y_pred = model.predict(X_test)
-  print('Accuracy: {}'.format(accuracy_score(y_test, y_pred)))
+  clf = svm.SVC(kernel = 'poly')
+  clf.fit(X_train, y_train)
+  preds = clf.predict(X_test)
+  acc = accuracy_score(y_test, preds)
+  conf_mat = confusion_matrix(y_test, preds)
+
   t1 = time.time()
   
-  return
+  return acc*100, conf_mat, (t1-t0)
 
 
 accuracy = []
 timer = []
 for i in range(5,26,5):
   print('\nCalculating for a threshold of {}'.format(i))
-  main(i)
-  # accuracy.append(data[0])
-  # conf_mat = data[1]
-  # timer.append(data[2])
-  # print('\nAccuracy = {}\nTime taken = {} sec\nConfusion matrix :\n{}'.format(data[0],data[2],data[1]))
+  data = main(i)
+  accuracy.append(data[0])
+  conf_mat = data[1]
+  timer.append(data[2])
+  print('\nAccuracy = {}\nTime taken = {} sec\nConfusion matrix :\n{}'.format(data[0],data[2],data[1]))

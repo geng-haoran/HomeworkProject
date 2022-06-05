@@ -14,4 +14,4 @@ python train.py -e train_1e-3_noNorm_Adagrad  -o Adagrad
 
 
 
-CUDA_VISIBLE_DEVICES=5 python train.py -e train_1e-3_VGGNoAug_Adam  -o Adam -m vgg16
+CUDA_VISIBLE_DEVICES=6 python train.py -e train_1e-3_MLPALLAug_Adam  -o Adam -m mlp
