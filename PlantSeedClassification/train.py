@@ -87,7 +87,8 @@ if __name__ == "__main__":
     arg_parser.add_argument('--total_epoch', '-t', type=int, default=100, help="total epoch number for training")
     arg_parser.add_argument('--cont', '-c', action='store_true', help="whether to load saved checkpoints from $EXP_NAME and continue training")
     arg_parser.add_argument('--batch_size', '-b', type=int, default=50, help="batch size")
-    arg_parser.add_argument('--optimizer', '-o', type=str, default="adam", help="optimizer type")
+    arg_parser.add_argument('--optimizer', '-o', type=str, default="Adam", help="optimizer type: Adam SGD Adagrad")
+    arg_parser.add_argument('--model', '-m', type=str, default="resnet18", help="model: resnet18 conv vgg16 MLP")
     arg_parser.add_argument('--few_shot', '-f', action='store_true', help="only use few data")
 
     args = arg_parser.parse_args()
@@ -107,12 +108,34 @@ if __name__ == "__main__":
     train_loader = DataLoader(train_dataset,batch_size=args.batch_size,shuffle = True, num_workers = 10, drop_last=True,)
     val_loader = DataLoader(val_dataset,batch_size=args.batch_size,shuffle = False, num_workers = 10)
     
-    model = ConvNet()
+    if args.model == "resnet18":
+        model = ResNet18()
+    elif args.model == "vgg16":
+        model = VGG16()
+    elif args.model == "conv":
+        model = ConvNet()
+    elif args.model == "MLP":
+        model = MLPNet()
+    elif args.model == "conv_nonorm":
+        model = ConvNet_noNorm
+    elif args.model == "MLP_norm":
+        model = MLPNet_Norm()
+    elif args.model == "MLP_NormDropout":
+        model = MLPNet_NormDropout()
+    else:
+        print("No such model")
+        exit(0)
+    model = ResNet18()
     if torch.cuda.is_available():
         model = model.cuda()
     print("Finish Loading Model~")
-    if args.optimizer == "adam":
-        optimizer = optim.Adam(model.parameters(), lr=args.lr)
+    if args.optimizer == "Adam":
+        optimizer = optim.Adam(model.parameters(), lr=args.lr,weight_decay=1e-4)
+    elif args.optimizer == "Adagrad":
+        optimizer = optim.Adagrad(model.parameters(), lr=args.lr, lr_decay=0, weight_decay=1e-4, initial_accumulator_value=0)
+    elif args.optimizer == "SGD":
+        optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0, dampening=0, weight_decay=1e-4, nesterov=False)
+    
     else:
         print('No such optimizer !')
         exit(123)
