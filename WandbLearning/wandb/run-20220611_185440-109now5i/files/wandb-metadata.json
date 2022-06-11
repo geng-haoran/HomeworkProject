@@ -1,0 +1,24 @@
+{
+    "os": "Linux-5.4.0-96-generic-x86_64-with-debian-bullseye-sid",
+    "python": "3.7.0",
+    "heartbeatAt": "2022-06-11T10:54:42.904005",
+    "startedAt": "2022-06-11T10:54:40.989661",
+    "docker": null,
+    "gpu": "NVIDIA GeForce RTX 2080 Ti",
+    "gpu_count": 8,
+    "cpu_count": 96,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "test.py",
+    "codePath": "WandbLearning/test.py",
+    "git": {
+        "remote": "git@github.com:geng-haoran/HomeworkProject.git",
+        "commit": "9e3042c877d0a75bf4b584fc9b18770116d0a02d"
+    },
+    "email": "2000012975@stu.pku.edu.cn",
+    "root": "/data2/haoran/HW/HomeworkProject",
+    "host": "VM-16-15-ubuntu",
+    "username": "haorangeng",
+    "executable": "/home/haorangeng/anaconda3/envs/pg/bin/python"
+}
