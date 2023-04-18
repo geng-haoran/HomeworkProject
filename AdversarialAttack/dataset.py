@@ -14,17 +14,29 @@ from torch.utils.data import DataLoader
 from PGD.pgd import PGD
 import torchvision
 import torchvision.transforms as transforms
+
+
 # 数据集
-class CIFAR10():
+class CIFAR10:
     MEAN = (0.485, 0.456, 0.406)
     STD = (0.229, 0.224, 0.225)
     NUM_CLASSES = 10
     IMAGE_SIZE = [32, 32]
     IMAGE_CHANNELS = 3
-    
-    def __init__(self,train=True,attack = False,model=None, eps=8/255, alpha=2/255, steps=4, attck_training = False):
-        transform = transforms.Compose([transforms.ToTensor(),
-                                        transforms.Normalize(self.MEAN, self.STD)])
+
+    def __init__(
+        self,
+        train=True,
+        attack=False,
+        model=None,
+        eps=8 / 255,
+        alpha=2 / 255,
+        steps=4,
+        attck_training=False,
+    ):
+        transform = transforms.Compose(
+            [transforms.ToTensor(), transforms.Normalize(self.MEAN, self.STD)]
+        )
         self.train = train
         self.load_dataset(transform)
         self.train_imgs = []
@@ -50,11 +62,10 @@ class CIFAR10():
         self.test_gts = np.array(self.test_gts)
         self.raw_test_gts = np.array(self.raw_test_gts)
         if self.train:
-            self.data = self.train_imgs.transpose((0,2,3,1))
+            self.data = self.train_imgs.transpose((0, 2, 3, 1))
             self.targets = self.train_gts
         else:
-            
-            self.data = self.test_imgs.transpose((0,2,3,1))
+            self.data = self.test_imgs.transpose((0, 2, 3, 1))
             # print(self.data.shape)
             self.targets = self.test_gts
         if attack:
@@ -62,21 +73,27 @@ class CIFAR10():
             # for i in range(self.raw_test_imgs):
             # print(torch.from_numpy(self.raw_test_imgs).shape)
             # print(torch.from_numpy(self.raw_test_imgs.transpose((0,3,1,2))).shape)
-            self.adv_images = atk(torch.from_numpy(self.raw_test_imgs.transpose((0,3,1,2))).float()/255, torch.from_numpy(self.raw_test_gts))
-            self.raw_adv_images = self.adv_images.cpu().numpy().transpose((0,2,3,1))
-            
-            self.data = self.adv_images.cpu().numpy().transpose((0,2,3,1))
+            self.adv_images = atk(
+                torch.from_numpy(self.raw_test_imgs.transpose((0, 3, 1, 2))).float()
+                / 255,
+                torch.from_numpy(self.raw_test_gts),
+            )
+            self.raw_adv_images = self.adv_images.cpu().numpy().transpose((0, 2, 3, 1))
+
+            self.data = self.adv_images.cpu().numpy().transpose((0, 2, 3, 1))
             self.targets = self.raw_test_gts
             for i in range(self.data.shape[0]):
                 # print(transform(self.data[i].copy()).shape)
-                self.data[i] = transform(self.data[i].copy()).numpy().transpose((1,2,0))
+                self.data[i] = (
+                    transform(self.data[i].copy()).numpy().transpose((1, 2, 0))
+                )
             # print(self.adv_images)
             # print(self.data.shape)
             # exit(123)
             # print(self.targets.shape)
             # print(self.data.max(0).max(0).max(0))
             # print(self.data.min(0).min(0).min(0))
-        
+
         # print(self.test_imgs.max(0).max(0).max(0))
         # print(self.test_imgs.min(0).min(0).min(0))
         # print((self.raw_test_imgs).max(0).max(0).max(0))
@@ -84,11 +101,17 @@ class CIFAR10():
         # print(self.raw_test_imgs.shape)
         # exit(123)
 
-    
     def load_dataset(self, transform):
-        self.trainset = torchvision.datasets.CIFAR10(root="./data", transform=transform, download=False)
-        self.testset = torchvision.datasets.CIFAR10(root="./data", train=False, transform=transform, download=False)
-        self.raw_testset = torchvision.datasets.CIFAR10(root="./data", train=False, transform=None, download=False)
+        self.trainset = torchvision.datasets.CIFAR10(
+            root="./data", transform=transform, download=False
+        )
+        self.testset = torchvision.datasets.CIFAR10(
+            root="./data", train=False, transform=transform, download=False
+        )
+        self.raw_testset = torchvision.datasets.CIFAR10(
+            root="./data", train=False, transform=None, download=False
+        )
+
     def __getitem__(self, index):
         """
         Args:
