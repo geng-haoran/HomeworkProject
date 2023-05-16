@@ -47,7 +47,8 @@ def write_obj(vertices, faces, file_path):
             f.write('f {}\n'.format(' '.join([str(idx + 1) for idx in face]))) 
             # write face indices
 
-def laplacian_deformation(vertices, faces, iterations=10, alpha=0.2):
+# laplacian deformation
+def laplacian_deformation_(vertices, faces, iterations=100, alpha=0.2):
     '''
     function: laplacian deformation
     vertices: (num_vertices, 3) array of vertex positions
@@ -76,8 +77,9 @@ def laplacian_deformation(vertices, faces, iterations=10, alpha=0.2):
 
     return vertices
 
+# arap deformation
 def arap_deformation(vertices, faces, anchor_vertex_ids, target_positions, 
-                     iterations=10, local_iterations=10):
+                     iterations=10, local_iterations=20):
     '''
     function: arap deformation
     vertices: (num_vertices, 3) array of vertex positions
@@ -140,12 +142,6 @@ def arap_deformation(vertices, faces, anchor_vertex_ids, target_positions,
     return deformed_vertices
 
 def build_laplacian(num_vertices, vertex_adjacency):
-    '''
-    function: build laplacian matrix
-    num_vertices: number of vertices
-    vertex_adjacency: vertex adjacency
-    returns: laplacian matrix
-    '''
     weights = np.zeros((num_vertices, num_vertices))
 
     for i in range(num_vertices):
@@ -159,15 +155,7 @@ def build_laplacian(num_vertices, vertex_adjacency):
     laplacian = csr_matrix(np.diag(np.sum(weights, axis=1))) - sparse_weights
     return laplacian
 
-def poisson_deformation(vertices, faces, anchor_vertex_ids, target_positions, iterations=10):
-    '''
-    function: poisson deformation
-    vertices: (num_vertices, 3) array of vertex positions
-    faces: (num_faces, 3) array of face indices
-    anchor_vertex_ids: (num_anchors,) array of vertex ids
-    target_positions: (num_anchors, 3) array of target positions
-    iterations: number of iterations
-    '''
+def laplacian_deformation(vertices, faces, anchor_vertex_ids, target_positions, iterations=10):
     num_vertices = len(vertices)
     vertex_adjacency = {i: set() for i in range(num_vertices)}
 
@@ -189,24 +177,18 @@ def poisson_deformation(vertices, faces, anchor_vertex_ids, target_positions, it
 
     return vertices
 
-def run_poisson(input_obj_file, output_obj_file):
-    '''
-    function: run poisson deformation
-    input_obj_file: path to input obj file
-    output_obj_file: path to output obj file
-    returns: None
-    '''
+def run_laplacian(input_obj_file, output_obj_file):
     vertices, faces = read_obj(input_obj_file)
 
     # Example anchor_vertex_ids and target_positions.
     # Replace these with your desired anchor vertices and target positions.
     anchor_vertex_ids = [0, 10]
-    target_positions = np.array([[1, 0, 0], [-1, 0, 0]])
+    target_positions = np.array([[0, 0, 0], [-0, 0, 0]])
 
-    deformed_vertices = poisson_deformation(vertices, faces, anchor_vertex_ids, target_positions)
+    deformed_vertices = laplacian_deformation(vertices, faces, anchor_vertex_ids, target_positions)
     write_obj(deformed_vertices, faces, output_obj_file)
 
-def run_laplacian(input_obj_file, output_obj_file):
+def run_laplacian_(input_obj_file, output_obj_file):
     '''
     function: run laplacian deformation
     input_obj_file: path to input obj file
@@ -228,8 +210,8 @@ def run_arap(input_obj_file, output_obj_file):
 
     # Example anchor_vertex_ids and target_positions.
     # Replace these with your desired anchor vertices and target positions.
-    anchor_vertex_ids = [0, 10]
-    target_positions = np.array([[1, 0, 0], [-1, 0, 0]])
+    anchor_vertex_ids = [0]
+    target_positions = np.array([[-1, 0, 0]])
 
     deformed_vertices = arap_deformation(vertices, faces, anchor_vertex_ids, target_positions)
     write_obj(deformed_vertices, faces, output_obj_file)
@@ -237,7 +219,7 @@ def run_arap(input_obj_file, output_obj_file):
 if __name__ == "__main__":
     if len(sys.argv) != 4:
         print("Usage: python deformation.py <method_code> <input_obj_file> <output_obj_file>")
-        print("method_code: 1(poisson) 2(laplacian) 3(arap)")
+        print("method_code: 1(laplacian) 2(arap)")
         exit(1)
 
     method_code = sys.argv[1]
@@ -252,8 +234,6 @@ if __name__ == "__main__":
         os.system("touch {}".format(output_obj_file))
 
     if method_code == "1":
-        run_poisson(input_obj_file, output_obj_file)
-    elif method_code == "2":
         run_laplacian(input_obj_file, output_obj_file)
-    elif method_code == "3":
+    elif method_code == "2":
         run_arap(input_obj_file, output_obj_file)

@@ -130,7 +130,6 @@ dmypy.json
 
 *exp*
 
-
 raw*
 data/
 trashbin/
@@ -138,5 +137,4 @@ reference/
 visu/
 exp/
 output/
-
 datav*
