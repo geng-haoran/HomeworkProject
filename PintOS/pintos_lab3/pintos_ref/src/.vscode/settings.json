@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "list.h": "c",
+        "atomic": "c",
+        "stdio.h": "c",
+        "string.h": "c",
+        "interrupt.h": "c",
+        "synch.h": "c",
+        "thread": "c"
+    }
+}

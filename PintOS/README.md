@@ -2,9 +2,9 @@
 
 - docker run with mount
     
-    `docker run -it --rm --name pintos --mount type=bind,source=/Users/genghaoran/代码/HomeworkProject/PintOS/pintos_lab2/pintos,target=/home/PKUOS/pintos pkuflyingpig/pintos bash`
+    `docker run -it --rm --name pintos --mount type=bind,source=/Users/genghaoran/Code/HomeworkProject/PintOS/pintos_lab3/pintos,target=/home/PKUOS/pintos pkuflyingpig/pintos bash`
     
-    `docker run -it --rm --name pintos --mount type=bind,source=/Users/genghaoran/代码/HomeworkProject/PintOS/pintos_lab2/answer/pintos,target=/home/PKUOS/pintos pkuflyingpig/pintos bash`
+    `docker run -it --rm --name pintos --mount type=bind,source=/Users/genghaoran/Code/HomeworkProject/PintOS/pintos_lab3/pintos_ref,target=/home/PKUOS/pintos pkuflyingpig/pintos bash`
     
 - build and start
     

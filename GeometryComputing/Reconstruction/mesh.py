@@ -11,8 +11,8 @@ def read_xyz_file(filename):
             normals.append((nx, ny, nz))
     return np.array(points), np.array(normals)
 
-DATA_ROOT = "data/gargoyle.xyz"
-id = 0
+DATA_ROOT = "gargoyle.xyz"
+id = 7000
 points, normals = read_xyz_file(DATA_ROOT)
 # 假设你有一个点云数据和法线数据
 point_cloud = points  # N x 3的点云坐标矩阵
