@@ -24,7 +24,7 @@
    Nonzero PTEs are devided into two groups by P flag.
 
    Here's the meanings for each field in a PTE as an index for an SPTE :
-   Pointer To SPTE : a pointer points to an union spte, declared in page.c.
+   Pointer To SPTE : a pointer points to an union SPTE, declared in page.c.
    W : W = 1 indicates this unpresent page is writable, otherwise it's not.
    S : S = 1 indicates this unpresent page is in swap file, otherwise it's 
        in file system.
@@ -38,11 +38,11 @@
 
 
 void supplemental_paging_init(void);
-void *create_spte_file(struct file* f, off_t ofs, uint32_t read_bytes);
-void *create_spte_swap(size_t slot);
-uint32_t pack_spte(void *spte, bool rw, bool in_swap);
-void ready_spte(void *spte);
-void free_spte(void *spte, bool in_swap);
-bool spte_load_page(void *spte, void *kpage, bool in_swap);
-void destory_spte(void *spte);
+void *create_SPTE_file(struct file* f, off_t ofs, uint32_t read_bytes);
+void *create_SPTE_swap(size_t slot);
+uint32_t pack_SPTE(void *SPTE, bool rw, bool in_swap);
+void ready_SPTE(void *SPTE);
+void free_SPTE(void *SPTE, bool in_swap);
+bool SPTE_load_page(void *SPTE, void *kpage, bool in_swap);
+void destory_SPTE(void *SPTE);
 #endif /**< vm/page.h */

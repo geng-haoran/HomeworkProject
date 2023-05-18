@@ -12,19 +12,16 @@
 static uint32_t *active_pd (void);
 static void invalidate_pagedir (uint32_t *);
 
+/**< Lock for demanding pages. */
+static struct lock pagedir_lock;   
 
-static struct lock pagedir_lock;   /**< Lock for demanding pages. */
-
-void 
-pagedir_lock_init(void)
+/** Returns the current thread's page directory. */
+void pagedir_lock_init(void)
 {
   lock_init(&pagedir_lock);
 }
 
-/** Creates a new page directory that has mappings for kernel
-   virtual addresses, but none for user virtual addresses.
-   Returns the new page directory, or a null pointer if memory
-   allocation fails. */
+/** Sets up the CPU's page directory for paged kernel virtual addresses. */
 uint32_t *
 pagedir_create (void) 
 {
@@ -34,10 +31,8 @@ pagedir_create (void)
   return pd;
 }
 
-/** Destroys page directory PD, freeing all the pages it
-   references. Won't write back any page. */
-void
-pagedir_destroy (uint32_t *pd) 
+/** Installs page directory PD into the CPU. */
+void pagedir_destroy (uint32_t *pd) 
 {
   uint32_t *pde;
 
@@ -55,9 +50,9 @@ pagedir_destroy (uint32_t *pd)
           if (*pte)
           { 
             if(*pte&PTE_P)
-              frame_free_page (pte_get_page (*pte),false);
+              f_free_p (pte_get_page (*pte),false);
             else
-              free_spte((void *)(*pte&SPTE_MASK),*pte&SPTE_S);
+              free_SPTE((void *)(*pte&SPTE_MASK),*pte&SPTE_S);
           }
         palloc_free_page (pt);
       }
@@ -65,14 +60,9 @@ pagedir_destroy (uint32_t *pd)
   lock_release(&pagedir_lock);
 }
 
-/** Returns the address of the page table entry for virtual
-   address VADDR in page directory PD.
-   If PD does not have a page table for VADDR, behavior depends
-   on CREATE.  If CREATE is true, then a new page table is
-   created and a pointer into it is returned.  Otherwise, a null
-   pointer is returned. */
-static uint32_t *
-lookup_page (uint32_t *pd, const void *vaddr, bool create)
+/** Returns true if the PTE for virtual address VADDR in page
+    directory PD exists, false otherwise. */
+static uint32_t *lookup_page (uint32_t *pd, const void *vaddr, bool create)
 {
   uint32_t *pt, *pde;
 
@@ -103,18 +93,9 @@ lookup_page (uint32_t *pd, const void *vaddr, bool create)
   return &pt[pt_no (vaddr)];
 }
 
-/** Adds a mapping in page directory PD from user virtual page
-   UPAGE to the physical frame identified by kernel virtual
-   address KPAGE.
-   UPAGE must not already be mapped.
-   KPAGE should probably be a page obtained from the user pool
-   with palloc_get_page().
-   If WRITABLE is true, the new page is read/write;
-   otherwise it is read-only.
-   Returns true if successful, false if memory allocation
-   failed. */
-bool
-pagedir_set_page (uint32_t *pd, void *upage, void *kpage, bool writable)
+/** Returns the address of the page table entry for virtual address
+    VADDR in page directory PD. */
+bool pagedir_set_page (uint32_t *pd, void *upage, void *kpage, bool writable)
 {
   uint32_t *pte;
 
@@ -136,12 +117,9 @@ pagedir_set_page (uint32_t *pd, void *upage, void *kpage, bool writable)
     return false;
 }
 
-/** Looks up the physical address that corresponds to user virtual
-   address UADDR in PD.  Returns the kernel virtual address
-   corresponding to that physical address, or a null pointer if
-   UADDR is unmapped. */
-void *
-pagedir_get_page (uint32_t *pd, const void *uaddr) 
+/** Returns the address of the page table entry for virtual address
+    VADDR in page directory PD. */
+void *pagedir_get_page (uint32_t *pd, const void *uaddr) 
 {
   uint32_t *pte;
 
@@ -154,10 +132,8 @@ pagedir_get_page (uint32_t *pd, const void *uaddr)
     return NULL;
 }
 
-/** Return true if UADDR in PD hasn't been mapped.
-*/
-bool 
-pagedir_is_unmapped(uint32_t *pd, const void *uaddr)
+/** Return true if UADDR in PD hasn't been mapped.*/
+bool pagedir_is_unmapped(uint32_t *pd, const void *uaddr)
 {
   uint32_t *pte;
 
@@ -170,34 +146,31 @@ pagedir_is_unmapped(uint32_t *pd, const void *uaddr)
 /** Add a mapping in page directory PD from user virtual page
   UPAGE to a SPTE with flags RW and IN_SWAP. Return true if success.
 */
-bool 
-pagedir_set_spte (uint32_t *pd,void *upage,void *spte,bool rw,bool in_swap)
+bool pagedir_set_SPTE (uint32_t *pd,void *upage,void *SPTE,bool rw,bool in_swap)
 {
   uint32_t *pte;
 
   ASSERT(pg_ofs(upage)==0);
   ASSERT(is_user_vaddr(upage));
-  ASSERT(((uint32_t)spte&~SPTE_MASK)==0);
+  ASSERT(((uint32_t)SPTE&~SPTE_MASK)==0);
 
   pte=lookup_page(pd,upage,true);
 
   if(pte!=NULL)
   {
-    *pte=pack_spte(spte,rw,in_swap);
+    *pte=pack_SPTE(SPTE,rw,in_swap);
     return true;
   }
   else
     return false;
 }
 
-/** Demand an unpresent page UPAGE in PD. Return true if success. 
-*/
-bool 
-pagedir_demand_page (uint32_t *pd, void *upage)
+/** Demand an unpresent page UPAGE in PD. Return true if success. */
+bool pagedir_demand_page (uint32_t *pd, void *upage)
 {
   uint32_t *pte;
   bool success=false;
-  void *spte;
+  void *SPTE;
   bool rw,in_swap;
   void *kpage;
   bool need_eviction;
@@ -215,26 +188,26 @@ pagedir_demand_page (uint32_t *pd, void *upage)
   }
     
   /* Get each field out of PTE. */
-  spte=(void *)(*pte&SPTE_MASK);
+  SPTE=(void *)(*pte&SPTE_MASK);
   rw=*pte&SPTE_W;
   in_swap=*pte&SPTE_S;
 
   /* Get a frame to contain user virtual page. */
-  kpage=frame_get_page(&need_eviction);
+  kpage=f_get_p(&need_eviction);
   ASSERT(kpage!=NULL);
   lock_release(&pagedir_lock);
   /* Do evictions. */
   if(need_eviction)
-    frame_evict_page(kpage);
+    f_evict_p(kpage);
   /* Load KPAGE. */
-  if(!spte_load_page(spte,kpage,in_swap))
+  if(!SPTE_load_p(SPTE,kpage,in_swap))
   {
     palloc_free_page(kpage);
     goto demand_done;
   }
   /* Modify our page table and global frame table */
   pagedir_set_page(pd,upage,kpage,rw);
-  frame_set_page(kpage,pd,upage);
+  f_set_p(kpage,pd,upage);
   success=true;
 
 demand_done:
@@ -246,8 +219,7 @@ demand_done:
   Return true if success. Mappings will fail if user memory has already
   been mapped.
 */
-bool 
-pagedir_map_page(uint32_t *pd,void *addr,void *file,uint32_t length)
+bool pagedir_map_page(uint32_t *pd,void *addr,void *file,uint32_t length)
 {
   ASSERT(pg_ofs(addr)==0);
 
@@ -266,13 +238,13 @@ pagedir_map_page(uint32_t *pd,void *addr,void *file,uint32_t length)
   }
   if(!success)
     goto map_done;
-  /* Make mappings through setting some sptes in page table. */
+  /* Make mappings through setting some SPTEs in page table. */
   while(length>0)
   {
     size_t read_bytes=length<PGSIZE?length:PGSIZE;
-    void *new_spte=create_spte_file((struct file *) file,ofs,read_bytes);
-    ready_spte(new_spte);
-    pagedir_set_spte(pd,addr,new_spte,true,false);
+    void *new_SPTE=create_SPTE_file((struct file *) file,ofs,read_bytes);
+    ready_SPTE(new_SPTE);
+    pagedir_set_SPTE(pd,addr,new_SPTE,true,false);
     length-=read_bytes;
     ofs+=read_bytes;
     addr=(void *)((uint32_t)addr+PGSIZE);
@@ -285,8 +257,7 @@ map_done:
 /** Unmap LENGTH bytes form ADDR in PD.
   Write back any modified page to file.
 */
-void 
-pagedir_unmap_page(uint32_t *pd,void *addr,uint32_t length)
+void pagedir_unmap_page(uint32_t *pd,void *addr,uint32_t length)
 {
   ASSERT(pg_ofs(addr)==0);
 
@@ -297,9 +268,9 @@ pagedir_unmap_page(uint32_t *pd,void *addr,uint32_t length)
     uint32_t *pte=lookup_page(pd,(void *)((uint32_t)addr+pg*PGSIZE),false);
     ASSERT(*pte);
     if(*pte&PTE_P)
-      frame_free_page (pte_get_page (*pte),true);
+      f_free_p (pte_get_page (*pte),true);
     else
-      free_spte((void *)(*pte&SPTE_MASK),*pte&SPTE_S);
+      free_SPTE((void *)(*pte&SPTE_MASK),*pte&SPTE_S);
     *pte=0;
   }
   lock_release(&pagedir_lock);

@@ -133,7 +133,7 @@ pintos_init (void)
   filesys_init (format_filesys);
   lock_init(&filesys_lock);
 #endif
-  frame_init(user_page_limit);
+  f_init(user_page_limit); // initialize frame table
   supplemental_paging_init();
   swap_init();
   printf ("Boot complete.\n");

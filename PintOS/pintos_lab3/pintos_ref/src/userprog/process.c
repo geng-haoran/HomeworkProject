@@ -430,7 +430,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
 /** load() helpers. */
 
-static bool install_spte (void *upage, void *spte, bool writable);
+static bool install_SPTE (void *upage, void *SPTE, bool writable);
 /** Checks whether PHDR describes a valid, loadable segment in
    FILE and returns true if so, false otherwise. */
 static bool
@@ -506,14 +506,14 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
       /* Create a new SPTE contains file position. */
-      void *new_spte=create_spte_file(file,ofs,page_read_bytes);
-      if(!install_spte(upage,new_spte,writable))
+      void *new_SPTE=create_SPTE_file(file,ofs,page_read_bytes);
+      if(!install_SPTE(upage,new_SPTE,writable))
       {
-        destory_spte(new_spte);
+        destory_SPTE(new_SPTE);
         return false;
       }
       /* Make new SPTE ready for loading. */
-      ready_spte(new_spte);
+      ready_SPTE(new_SPTE);
       /* Advance. */
       read_bytes -= page_read_bytes;
       zero_bytes -= page_zero_bytes;
@@ -529,25 +529,25 @@ static bool
 setup_stack (void **esp) 
 {
   bool success = false;
-  void *new_spte=create_spte_file(NULL,0,0);
-  success=install_spte(((uint8_t *) PHYS_BASE) - PGSIZE,new_spte,true);
+  void *new_SPTE=create_SPTE_file(NULL,0,0);
+  success=install_SPTE(((uint8_t *) PHYS_BASE) - PGSIZE,new_SPTE,true);
   if(success)
   {
     *esp=PHYS_BASE;
-    ready_spte(new_spte);
+    ready_SPTE(new_SPTE);
   }
   else
-    destory_spte(new_spte);
+    destory_SPTE(new_SPTE);
   return success;
 }
 
 /** Add a mapping form current thread's virtual page upage to a SPTE.
 */
 static bool 
-install_spte (void *upage, void *spte, bool writable)
+install_SPTE (void *upage, void *SPTE, bool writable)
 {
   struct thread *t=thread_current();
 
   return (pagedir_get_page(t->pagedir,upage)==NULL
-          && pagedir_set_spte(t->pagedir,upage,spte,writable,false));
+          && pagedir_set_SPTE(t->pagedir,upage,SPTE,writable,false));
 }

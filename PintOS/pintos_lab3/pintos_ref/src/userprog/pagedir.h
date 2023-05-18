@@ -9,7 +9,7 @@ void pagedir_destroy (uint32_t *pd);
 bool pagedir_set_page (uint32_t *pd, void *upage, void *kpage, bool rw);
 void *pagedir_get_page (uint32_t *pd, const void *upage);
 bool pagedir_is_unmapped(uint32_t *pd, const void *upage);
-bool pagedir_set_spte (uint32_t *pd, void *upage, void *spte, 
+bool pagedir_set_SPTE (uint32_t *pd, void *upage, void *SPTE, 
                                         bool rw,bool in_swap);
 bool pagedir_demand_page (uint32_t *pd, void *upage);
 bool pagedir_map_page(uint32_t *pd,void *addr,void *file,uint32_t length);

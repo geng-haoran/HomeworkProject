@@ -17,37 +17,16 @@ static long long page_fault_cnt;
 static void kill (struct intr_frame *);
 static void page_fault (struct intr_frame *);
 
-/** Registers handlers for interrupts that can be caused by user
-   programs.
-
-   In a real Unix-like OS, most of these interrupts would be
-   passed along to the user process in the form of signals, as
-   described in [SV-386] 3-24 and 3-25, but we don't implement
-   signals.  Instead, we'll make them simply kill the user
-   process.
-
-   Page faults are an exception.  Here they are treated the same
-   way as other exceptions, but this will need to change to
-   implement virtual memory.
-
-   Refer to [IA32-v3a] section 5.15 "Exception and Interrupt
-   Reference" for a description of each of these exceptions. */
-void
-exception_init (void) 
+/** Registers handlers for interrupts that can be caused by user programs. */
+void exception_init (void) 
 {
-  /* These exceptions can be raised explicitly by a user program,
-     e.g. via the INT, INT3, INTO, and BOUND instructions.  Thus,
-     we set DPL==3, meaning that user programs are allowed to
-     invoke them via these instructions. */
+  /* These exceptions can be raised explicitly by a user program */
   intr_register_int (3, 3, INTR_ON, kill, "#BP Breakpoint Exception");
   intr_register_int (4, 3, INTR_ON, kill, "#OF Overflow Exception");
-  intr_register_int (5, 3, INTR_ON, kill,
-                     "#BR BOUND Range Exceeded Exception");
+  intr_register_int (5, 3, INTR_ON, kill, "#BR BOUND Range Exceeded Exception");
 
   /* These exceptions have DPL==0, preventing user processes from
-     invoking them via the INT instruction.  They can still be
-     caused indirectly, e.g. #DE can be caused by dividing by
-     0.  */
+     invoking them via the INT instruction. */
   intr_register_int (0, 0, INTR_ON, kill, "#DE Divide Error");
   intr_register_int (1, 0, INTR_ON, kill, "#DB Debug Exception");
   intr_register_int (6, 0, INTR_ON, kill, "#UD Invalid Opcode Exception");
@@ -161,10 +140,10 @@ page_fault (struct intr_frame *f)
    (uint32_t)fault_addr>=(uint32_t)(thread_current()->user_esp)-32&&
    pagedir_is_unmapped(thread_current()->pagedir,fault_page))
    {
-      void *new_spte=create_spte_file(NULL,0,0);
-      ready_spte(new_spte);
-      pagedir_set_spte(thread_current()->pagedir,
-                                    fault_page,new_spte,true,false);
+      void *new_SPTE=create_SPTE_file(NULL,0,0);
+      ready_SPTE(new_SPTE);
+      pagedir_set_SPTE(thread_current()->pagedir,
+                                    fault_page,new_SPTE,true,false);
    }
   /* Try to demand a unpresent page. */
   if(not_present

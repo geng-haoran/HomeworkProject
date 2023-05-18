@@ -12,8 +12,7 @@ static struct block *swap_block;        /**< Block device for swap. */
 static struct bitmap *swap_slots;       /**< Manage all slots. */
 static struct lock swap_slots_lock;     /**< Lock to protect swap_slots. */
 
-void 
-swap_init(void)
+void swap_init(void)
 {
     swap_block=block_get_role(BLOCK_SWAP);
     block_sector_t sectors=block_size(swap_block);
@@ -21,10 +20,8 @@ swap_init(void)
     lock_init(&swap_slots_lock);
 }
 
-/** Request a empty slot for later writing.
-*/
-size_t
-swap_get_slot(void)
+/** Request a empty slot for later writing. */
+size_t swap_get_slot(void)
 {
     lock_acquire(&swap_slots_lock);
     size_t slot=bitmap_scan_and_flip(swap_slots,0,1,false);
@@ -38,8 +35,7 @@ swap_get_slot(void)
 
 /** Write PAGE into SLOT. SLOT must be a slot got through swap_get_slot().
 */
-void 
-swap_out(size_t slot,void *page)
+void swap_out(size_t slot,void *page)
 {
     ASSERT(pg_ofs(page)==0);
 
@@ -52,10 +48,8 @@ swap_out(size_t slot,void *page)
 }
 
 /** Read from SLOT and write to PAGE. This function will free the slot when 
-  writing finishes.
-*/
-void 
-swap_in(size_t slot,void *page)
+  writing finishes.*/
+void swap_in(size_t slot,void *page)
 {
     ASSERT(pg_ofs(page)==0);
     size_t start_sec=slot*SECTOR_PER_SLOT;
@@ -67,8 +61,7 @@ swap_in(size_t slot,void *page)
 
 /** Free swap slot SLOT.
 */
-void 
-swap_free_slot(size_t slot)
+void swap_free_slot(size_t slot)
 {
     lock_acquire(&swap_slots_lock);
     bitmap_set(swap_slots,slot,false);
